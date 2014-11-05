@@ -25,7 +25,6 @@
 
 f_clefs = "Test_Data\\141-19650-00_Cles_mvt_20140820.csv"
 f_debits_theo_AM = "Test_Data\\141-19650-00_Estimation debits_0.1_20140909b_2021PM.csv"
-f_debits_PM = ""
  
 def lire(standard_debits):
     import csv
