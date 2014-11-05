@@ -21,10 +21,11 @@
 # Changer la colonne STD pour l'aligner avec la différence
 # les histoires de clés ... pas obliger de faire des erreurs si ça ne marche pas
 
-f_clefs = "141-19650-00_Cles_mvt_20140820.csv"
-f_debits_theo_AM = "141-19650-00_Estimation débits_0.1_20140909b_2021AM.csv"
+
+
+f_clefs = "Test_Data\\141-19650-00_Cles_mvt_20140820.csv"
+f_debits_theo_AM = "Test_Data\\141-19650-00_Estimation debits_0.1_20140909b_2021PM.csv"
 f_debits_PM = ""
-ordre = [20, 19, 18, 135, 160, 350, 247, 348, 289, 14, 63, 260, 295, 34, 95, 70, 361, 31, 59, 60, 147, 137, 142, 33]
  
 def lire(standard_debits):
     import csv
@@ -75,7 +76,7 @@ def lire_clefs(clefs_f):
     return clefs
 
 def test_lire_clefs():
-    clefs = lire_clefs(fichier_clefs)
+    clefs = lire_clefs(f_clefs)
     print clefs
 
 def traiter(knr):
@@ -120,7 +121,7 @@ def traiter(knr):
         if vehtype not in debits_f[node][mvt].keys():
             debits_f[node][mvt][vehtype] = debits_c[clef]
 
-    return debits_f
+    return (debits_f, knr)
 
 def test_traiter():
     """
@@ -135,11 +136,6 @@ def test_traiter():
         debits = traiter(knr)
         print debits
 
-def graph(data):
-    pass
-
-def ecart_type(data):
-    pass
 
 def imprimer(resultats, d_theo, outfile):
     """
@@ -171,7 +167,6 @@ def imprimer(resultats, d_theo, outfile):
             debit_theorique = float(d_theo[node][mvt]['Volume'])
             s = node+";"+mvt+";"+str(debit_theorique)+";"
             vals = []
-            print node + " " + mvt
 
             for i in range(nb_fichiers):
                 debit = 0
@@ -230,17 +225,29 @@ def imprimer(resultats, d_theo, outfile):
     plt.show()
 
 
-if __name__ == "__main__":
+resultats = []
+def log_results(traitement):
+    global resultats
+    resultats.append(traitement)
+
+def test_func(knr):
+    return knr
+
+def apply_async_with_callback():
+
     import glob
-    knrs = glob.glob("*.knr")
+    knrs = glob.glob("Test_Data\\*.knr")
     outfile = "fichiers_debits.csv"
-    resultats = []
-    import time
-
+    import multiprocessing as mp
+    pool = mp.Pool(processes = len(knrs))
     for knr in knrs:
-        debits = traiter(knr)
-        print debits
-        resultats.append((debits,knr))
+        pool.apply_async(traiter, args = (knr,) , callback=log_results)
 
+    pool.close()
+    pool.join()
+    global resultats
     d_theo = lire(f_debits_theo_AM)
     imprimer(resultats, d_theo , outfile)
+
+if __name__ == "__main__":
+    apply_async_with_callback()
