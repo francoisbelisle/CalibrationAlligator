@@ -9,7 +9,6 @@
 #   1) Fichier .CSV contenant les débits théoriques
 #   1) Fichier .CSV de clés
 #   2) Fichiers .KNR (au moins 2 ...)
-#   3) Fichiers de clé .txt
 
 # Output :
 #   fichier sortie.txt des différences entre les valeurs moyennes des simulations et les valeurs théoriques
@@ -120,6 +119,38 @@ def traiter(knr):
         if vehtype not in debits_f[node][mvt].keys():
             debits_f[node][mvt][vehtype] = debits_c[clef]
 
+    return (debits_f, knr)
+
+def fast_traiter(knr):
+    import csv
+    fichier_tt = knr
+    reader = csv.reader(open(fichier_tt),delimiter=';') 
+    indexes = {}
+    debits_f = {}
+    recording = False
+    for row in reader :
+        row_s = [w.strip() for w in row]
+        if recording == True :
+            node = row_s[indexes["NodeNo"]]
+            mvt = redresser_mvt(node,row_s[indexes["Movement"]])
+            vehtype = row_s[indexes["VehType"]]
+
+            if node not in debits_f.keys():
+                debits_f[node] = {}
+
+            if mvt not in debits_f[node].keys():
+                debits_f[node][mvt] = {}
+
+            if vehtype not in debits_f[node][mvt].keys():
+                debits_f[node][mvt][vehtype] = 1
+            else: 
+                debits_f[node][mvt][vehtype] += 1
+
+        if  recording == False and ("NodeNo" in row_s and "Movement" in row_s and "VehType" in row_s) : 
+            recording = True
+            for term in ["NodeNo", "Movement", "VehType"]:
+                indexes[term] = row_s.index(term)
+    
     return (debits_f, knr)
 
 def test_traiter():
@@ -240,7 +271,7 @@ def apply_async_with_callback():
     import multiprocessing as mp
     pool = mp.Pool(processes = len(knrs))
     for knr in knrs:
-        pool.apply_async(traiter, args = (knr,) , callback=log_results)
+        pool.apply_async(fast_traiter, args = (knr,) , callback=log_results)
 
     pool.close()
     pool.join()
@@ -249,4 +280,10 @@ def apply_async_with_callback():
     imprimer(resultats, d_theo , outfile)
 
 if __name__ == "__main__":
+    import datetime
+    debut = datetime.datetime.now()
     apply_async_with_callback()
+    fin = datetime.datetime.now()
+    duree = fin-debut
+    print "Traiter en : " + str(duree.seconds) + " secondes"
+    
